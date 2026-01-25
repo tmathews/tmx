@@ -1,5 +1,5 @@
 # This is a minimal CMakeLists.txt to link with libTMX and its dependencies
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 project(dumper VERSION 1.0.0 LANGUAGES C)
 
