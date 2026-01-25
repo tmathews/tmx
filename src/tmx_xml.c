@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <libxml/xmlreader.h>
 
@@ -352,7 +353,20 @@ static int parse_object(xmlTextReaderPtr reader, tmx_object *obj, int is_on_map,
 
 	if ((value = (char*)xmlTextReaderGetAttribute(reader, (xmlChar*)"gid"))) { /* gid */
 		obj->obj_type = OT_TILE;
-		obj->content.gid = atoi(value);
+
+		unsigned long long gid = strtoull(value, NULL, 0);
+		if (!gid) {
+			tmx_err(E_RANGE, "xml parser: object %u has invalid gid '%s'", obj->id, value);
+			tmx_free_func(value);
+			return 0;
+		}
+		if (gid > UINT_MAX) {
+			tmx_err(E_RANGE, "xml parser: object %u has out-of-range gid '%s'", obj->id, value);
+			tmx_free_func(value);
+			return 0;
+		}
+
+		obj->content.gid = (unsigned int)gid;
 		tmx_free_func(value);
 	}
 
