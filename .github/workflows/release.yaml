@@ -8,12 +8,12 @@ on:
 
 env:
   libxml2_ver: v2.14.6
-  LIBXML2_CONFIGURE_FLAGS: '--without-c14n --without-catalog --without-debug --without-docbook --without-ftp
+  LIBXML2_CONFIGURE_FLAGS: '--without-c14n --without-catalog --without-debug --without-docs --without-python
     --without-http --without-html --without-xpath --without-xptr --without-xinclude --without-iconv --without-icu
-    --without-iso8859x --without-zlib --without-lzma --without-mem_debug --without-run_debug --without-schemas
-    --without-schematron --without-regexps --without-modules --without-pattern --without-push --without-valid
-    --without-sax1 --without-legacy --without-output --without-python
-    --with-tree --with-writer --with-reader
+    --without-iso8859x --without-zlib --without-lzma --without-schemas --without-output --without-writer
+    --without-schematron --without-regexps --without-modules --without-pattern --without-valid
+    --without-sax1 --without-legacy --without-relaxng --without-threads
+    --with-minimum --with-reader
     --disable-shared --enable-static'
   zlib_ver: v1.3.1
 
@@ -182,26 +182,30 @@ jobs:
           path: libxml2
           ref: ${{ env.libxml2_ver }}
       - name: Build and Install libxml2
+        # This version of libxml2 won't build on Windows unless DLIBXML2_WITH_WRITER==On & DLIBXML2_WITH_OUTPUT==On
         run: |
           cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=Off `
                 -DCMAKE_INSTALL_PREFIX="$($Env:DIST_PATH)" `
-                -DLIBXML2_WITH_C14N=Off -DLIBXML2_WITH_CATALOG=Off -DLIBXML2_WITH_DEBUG=Off -DLIBXML2_WITH_DOCB=Off `
-                -DLIBXML2_WITH_FTP=Off -DLIBXML2_WITH_HTTP=Off -DLIBXML2_WITH_HTML=Off -DLIBXML2_WITH_XPATH=Off `
-                -DLIBXML2_WITH_XPTR=Off -DLIBXML2_WITH_XINCLUDE=Off -DLIBXML2_WITH_ICONV=Off -DLIBXML2_WITH_ICU=Off `
-                -DLIBXML2_WITH_ISO8859X=Off -DLIBXML2_WITH_ZLIB=Off -DLIBXML2_WITH_LZMA=Off -DLIBXML2_WITH_SCHEMAS=Off `
-                -DLIBXML2_WITH_SCHEMATRON=Off -DLIBXML2_WITH_REGEXPS=Off -DLIBXML2_WITH_MODULES=Off `
-                -DLIBXML2_WITH_PATTERN=Off -DLIBXML2_WITH_VALID=Off -DLIBXML2_WITH_SAX1=Off -DLIBXML2_WITH_LEGACY=Off `
-                -DLIBXML2_WITH_PYTHON=Off -DLIBXML2_WITH_WALKER=Off -DLIBXML2_WITH_PUSH=On -DLIBXML2_WITH_TREE=On `
-                -DLIBXML2_WITH_OUTPUT=On -DLIBXML2_WITH_WRITER=On -DLIBXML2_WITH_READER=On &&
+                -DLIBXML2_WITH_C14N=Off -DLIBXML2_WITH_CATALOG=Off -DLIBXML2_WITH_DEBUG=Off -DLIBXML2_WITH_HTTP=Off `
+                -DLIBXML2_WITH_HTML=Off -DLIBXML2_WITH_XPATH=Off -DLIBXML2_WITH_XPTR=Off -DLIBXML2_WITH_XINCLUDE=Off `
+                -DLIBXML2_WITH_ICONV=Off -DLIBXML2_WITH_ICU=Off -DLIBXML2_WITH_ISO8859X=Off -DLIBXML2_WITH_ZLIB=Off `
+                -DLIBXML2_WITH_LZMA=Off -DLIBXML2_WITH_SCHEMAS=Off -DLIBXML2_WITH_SCHEMATRON=Off `
+                -DLIBXML2_WITH_REGEXPS=Off -DLIBXML2_WITH_MODULES=Off -DLIBXML2_WITH_PATTERN=Off `
+                -DLIBXML2_WITH_VALID=Off -DLIBXML2_WITH_SAX1=Off -DLIBXML2_WITH_LEGACY=Off -DLIBXML2_WITH_PYTHON=Off `
+                -DLIBXML2_WITH_OUTPUT=On -DLIBXML2_WITH_WRITER=On -DLIBXML2_WITH_RELAXNG=Off `
+                -DLIBXML2_WITH_THREADS=Off `
+                -DLIBXML2_WITH_PUSH=On -DLIBXML2_WITH_READER=On &&
           cmake --build build &&
           cmake --install build
-        working-directory: libxml2/win32
+        working-directory: libxml2
 
       # Clean-up
       - name: Clean-up
         run: |
           Remove-Item -Path "$($Env:DIST_PATH)/share" -Recurse
           Remove-Item -Path "$($Env:DIST_PATH)/bin" -Recurse
+          Remove-Item -Path "$($Env:DIST_PATH)/lib/pkgconfig" -Recurse
+          Remove-Item -Path "$($Env:DIST_PATH)/lib/cmake/libxml2-*" -Recurse
           Remove-Item -Path "$($Env:DIST_PATH)/lib/libzlib.dll.a"
 
       # Build and install libTMX
