@@ -90,7 +90,7 @@ static int parse_property(xmlTextReaderPtr reader, tmx_property *prop) {
 				break;
 		}
 	} else if (prop->type == PT_NONE || prop->type == PT_STRING) {
-		if (!(value = (char*)xmlTextReaderReadInnerXml(reader))) {
+		if (!(value = (char*)xmlTextReaderReadString(reader))) {
 			tmx_err(E_MISSEL, "xml parser: missing 'value' attribute or inner XML for the 'property' element");
 		}
 		prop->value.string = value;
@@ -252,7 +252,7 @@ static int parse_text(xmlTextReaderPtr reader, tmx_text *text) {
 		tmx_free_func(value);
 	}
 
-	if ((value = (char*)xmlTextReaderReadInnerXml(reader))) {
+	if ((value = (char*)xmlTextReaderReadString(reader))) {
 		text->text = value;
 	}
 
@@ -426,7 +426,7 @@ static int parse_data(xmlTextReaderPtr reader, uint32_t **gidsadr, size_t gidsco
 		return 0;
 	}
 
-	if (!(inner_xml = (char*)xmlTextReaderReadInnerXml(reader))) {
+	if (!(inner_xml = (char*)xmlTextReaderReadString(reader))) {
 		tmx_err(E_XDATA, "xml parser: missing content in the 'data' element");
 		tmx_free_func(value);
 		return 0;
