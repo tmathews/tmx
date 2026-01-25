@@ -1,13 +1,13 @@
 name: Release
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - tmx_** # Releases
 
 env:
-  # Latest (2.9.10): https://gitlab.gnome.org/GNOME/libxml2/-/issues/154
-  libxml2_ver: v2.9.9
+  libxml2_ver: v2.14.6
   LIBXML2_CONFIGURE_FLAGS: '--without-c14n --without-catalog --without-debug --without-docbook --without-ftp
     --without-http --without-html --without-xpath --without-xptr --without-xinclude --without-iconv --without-icu
     --without-iso8859x --without-zlib --without-lzma --without-mem_debug --without-run_debug --without-schemas
@@ -15,17 +15,17 @@ env:
     --without-sax1 --without-legacy --without-output --without-python
     --with-tree --with-writer --with-reader
     --disable-shared --enable-static'
-  zlib_ver: v1.2.11
+  zlib_ver: v1.3.1
 
 jobs:
   linux64:
     name: Linux 64 Build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       # context expressions lack the most basic string manipulation functions...
       - name: Create distribution folder
         run: |
-          ARTIFACT_NAME=${GITHUB_REF:10}-linux
+          ARTIFACT_NAME=${GITHUB_REF##refs/*/}-linux
           DIST_PATH=${GITHUB_WORKSPACE}/${ARTIFACT_NAME}
           echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> $GITHUB_ENV
           echo "DIST_PATH=${DIST_PATH}" >> $GITHUB_ENV
@@ -33,7 +33,7 @@ jobs:
 
       # Build and install zlib
       - name: Checkout zlib
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: madler/zlib
           path: zlib
@@ -46,7 +46,7 @@ jobs:
 
       # Build and install libxml2
       - name: Checkout libxml2
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: GNOME/libxml2
           path: libxml2
@@ -66,7 +66,7 @@ jobs:
 
       # Build and install libTMX
       - name: Checkout libTMX
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           path: tmx
       - name: Build and Install libTMX
@@ -77,7 +77,7 @@ jobs:
 
       # Upload
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.DIST_PATH }}
@@ -88,7 +88,7 @@ jobs:
     steps:
       - name: Create distribution folder
         run: |
-          ARTIFACT_NAME=${GITHUB_REF:10}-html5
+          ARTIFACT_NAME=${GITHUB_REF##refs/*/}-html5
           DIST_PATH=${GITHUB_WORKSPACE}/${ARTIFACT_NAME}
           echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> $GITHUB_ENV
           echo "DIST_PATH=${DIST_PATH}" >> $GITHUB_ENV
@@ -96,7 +96,7 @@ jobs:
 
       # Build and install emscripten
       - name: Checkout emsdk
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: emscripten-core/emsdk
           path: emsdk
@@ -111,7 +111,7 @@ jobs:
 
       # Build and install libxml2
       - name: Checkout libxml2
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: GNOME/libxml2
           path: libxml2
@@ -129,7 +129,7 @@ jobs:
 
       # Build and install libTMX
       - name: Checkout libTMX
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           path: tmx
       - name: Build and Install libTMX
@@ -143,18 +143,18 @@ jobs:
 
       # Upload
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.DIST_PATH }}
 
   windows:
     name: Windows Build
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - name: Create distribution folder
         run: |
-          $ARTIFACT_NAME=$($Env:GITHUB_REF).substring(10) + "-win"
+          $ARTIFACT_NAME=$($Env:GITHUB_REF -replace 'refs/([^/]+/)+', '' ) + "-win"
           echo "ARTIFACT_NAME=$ARTIFACT_NAME" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           $DIST_PATH="$($Env:GITHUB_WORKSPACE)\$ARTIFACT_NAME"
           echo "DIST_PATH=$DIST_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -162,7 +162,7 @@ jobs:
 
       # Build and install zlib
       - name: Checkout zlib
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: madler/zlib
           path: zlib
@@ -176,23 +176,25 @@ jobs:
 
       # Build and install libxml2
       - name: Checkout libxml2
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: GNOME/libxml2
           path: libxml2
           ref: ${{ env.libxml2_ver }}
       - name: Build and Install libxml2
         run: |
-          cscript configure.js prefix="$($Env:DIST_PATH)" compiler=mingw `
-                  c14n=no catalog=no debug=no docb=no ftp=no http=no html=no xpath=no xptr=no xinclude=no iconv=no `
-                  icu=no iso8859x=no zlib=no lzma=no xml_debug=no mem_debug=no run_debug=no schemas=no schematron=no `
-                  regexps=no modules=no pattern=no valid=no sax1=no legacy=no python=no walker=no `
-                  push=yes tree=yes output=yes writer=yes reader=yes &&
-          mingw32-make -f Makefile.mingw -j2 &&
-          Move-Item -Path bin.mingw\libxml2.a -Destination "$($Env:DIST_PATH)\lib" &&
-          New-Item -Path "$($Env:DIST_PATH)\include" -Name "libxml2" -ItemType "directory" &&
-          New-Item -Path "$($Env:DIST_PATH)\include\libxml2" -Name "libxml" -ItemType "directory" &&
-          Move-Item -Path "..\include\libxml\*.h" -Destination "$($Env:DIST_PATH)\include\libxml2\libxml"
+          cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=Off `
+                -DCMAKE_INSTALL_PREFIX="$($Env:DIST_PATH)" `
+                -DLIBXML2_WITH_C14N=Off -DLIBXML2_WITH_CATALOG=Off -DLIBXML2_WITH_DEBUG=Off -DLIBXML2_WITH_DOCB=Off `
+                -DLIBXML2_WITH_FTP=Off -DLIBXML2_WITH_HTTP=Off -DLIBXML2_WITH_HTML=Off -DLIBXML2_WITH_XPATH=Off `
+                -DLIBXML2_WITH_XPTR=Off -DLIBXML2_WITH_XINCLUDE=Off -DLIBXML2_WITH_ICONV=Off -DLIBXML2_WITH_ICU=Off `
+                -DLIBXML2_WITH_ISO8859X=Off -DLIBXML2_WITH_ZLIB=Off -DLIBXML2_WITH_LZMA=Off -DLIBXML2_WITH_SCHEMAS=Off `
+                -DLIBXML2_WITH_SCHEMATRON=Off -DLIBXML2_WITH_REGEXPS=Off -DLIBXML2_WITH_MODULES=Off `
+                -DLIBXML2_WITH_PATTERN=Off -DLIBXML2_WITH_VALID=Off -DLIBXML2_WITH_SAX1=Off -DLIBXML2_WITH_LEGACY=Off `
+                -DLIBXML2_WITH_PYTHON=Off -DLIBXML2_WITH_WALKER=Off -DLIBXML2_WITH_PUSH=On -DLIBXML2_WITH_TREE=On `
+                -DLIBXML2_WITH_OUTPUT=On -DLIBXML2_WITH_WRITER=On -DLIBXML2_WITH_READER=On &&
+          cmake --build build &&
+          cmake --install build
         working-directory: libxml2/win32
 
       # Clean-up
@@ -204,7 +206,7 @@ jobs:
 
       # Build and install libTMX
       - name: Checkout libTMX
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           path: tmx
       - name: Build and Install libTMX
@@ -216,7 +218,7 @@ jobs:
 
       # Upload
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.DIST_PATH }}
