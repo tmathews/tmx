@@ -81,6 +81,8 @@ if(BUILD_SHARED_LIBS)
 
     set_target_properties(tmx PROPERTIES SOVERSION ${API_VERSION})
     set_target_properties(tmx PROPERTIES VERSION ${BUILD_VERSION})
+else()
+    target_compile_definitions(tmx PRIVATE LIBXML_STATIC)
 endif()
 
 # --  Installation
