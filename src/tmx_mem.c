@@ -37,6 +37,10 @@ tmx_property* alloc_prop(void) {
 	return (tmx_property*)node_alloc(sizeof(tmx_property));
 }
 
+tmx_list_item* alloc_list_item(void) {
+	return (tmx_list_item*)node_alloc(sizeof(tmx_list_item));
+}
+
 tmx_image* alloc_image(void) {
 	return (tmx_image*)node_alloc(sizeof(tmx_image));
 }
@@ -132,6 +136,17 @@ void free_property(tmx_property *p) {
 		}
 		else if (p->type == PT_CUSTOM) {
 			free_props(p->value.properties);
+		}
+		else if (p->type == PT_LIST) {
+			tmx_list_item *item = p->value.list;
+			while (item) {
+				tmx_list_item *next = item->next;
+				if (item->type == PT_STRING || item->type == PT_FILE || item->type == PT_NONE) {
+					tmx_free_func(item->value.string);
+				}
+				tmx_free_func(item);
+				item = next;
+			}
 		}
 		tmx_free_func(p);
 	}

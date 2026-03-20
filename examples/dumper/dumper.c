@@ -129,7 +129,8 @@ void print_prop(tmx_property *p, void *depth) {
 		case PT_STRING: printf("string");  break;
 		case PT_COLOR:  printf("color");   break;
 		case PT_FILE:   printf("file");    break;
-		case PT_CUSTOM: printf("class");    break;
+		case PT_CUSTOM: printf("class");   break;
+		case PT_LIST:   printf("list");    break;
 		default: printf("unknown");
 	}
 	if (p->propertytype) {
@@ -143,6 +144,27 @@ void print_prop(tmx_property *p, void *depth) {
 		case PT_COLOR:  printf("#%.6X", p->value.color); break;
 		case PT_OBJECT: printf("obj #%d", p->value.object_id); break;
 		case PT_CUSTOM: dump_prop(p->value.properties, ((int)(uintptr_t)depth)+1); break;
+		case PT_LIST: {
+			tmx_list_item *item = p->value.list;
+			printf("[");
+			while (item) {
+				switch (item->type) {
+					case PT_INT:    printf("%d", item->value.integer); break;
+					case PT_FLOAT:  printf("%f", item->value.decimal); break;
+					case PT_BOOL:   printf(item->value.integer? "true": "false"); break;
+					case PT_COLOR:  printf("#%.6X", item->value.color); break;
+					case PT_OBJECT: printf("obj #%d", item->value.object_id); break;
+					case PT_NONE:
+					case PT_STRING:
+					case PT_FILE:
+					default:        printf("'%s'", item->value.string); break;
+				}
+				item = item->next;
+				if (item) printf(", ");
+			}
+			printf("]");
+			break;
+		}
 		case PT_NONE:
 		case PT_STRING:
 		case PT_FILE:

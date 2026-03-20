@@ -54,13 +54,14 @@ enum tmx_obj_alignment {OA_NONE, OA_TOP, OA_LEFT, OA_BOTTOM, OA_RIGHT, OA_CENTER
 enum tmx_layer_type {L_NONE, L_LAYER, L_OBJGR, L_IMAGE, L_GROUP};
 enum tmx_objgr_draworder {G_NONE, G_INDEX, G_TOPDOWN};
 enum tmx_obj_type {OT_NONE, OT_SQUARE, OT_POLYGON, OT_POLYLINE, OT_ELLIPSE, OT_TILE, OT_TEXT, OT_POINT};
-enum tmx_property_type {PT_NONE, PT_INT, PT_FLOAT, PT_BOOL, PT_STRING, PT_COLOR, PT_FILE, PT_OBJECT, PT_CUSTOM};
+enum tmx_property_type {PT_NONE, PT_INT, PT_FLOAT, PT_BOOL, PT_STRING, PT_COLOR, PT_FILE, PT_OBJECT, PT_CUSTOM, PT_LIST};
 enum tmx_horizontal_align {HA_NONE, HA_LEFT, HA_CENTER, HA_RIGHT, HA_JUSTIFY};
 enum tmx_vertical_align {VA_NONE, VA_TOP, VA_CENTER, VA_BOTTOM};
 enum tmx_tile_render_size {TRS_NONE, TRS_TILE, TRS_GRID};
 enum tmx_fill_mode {FM_NONE, FM_STRETCH, FM_PRESERVE_ASPECT_FIT};
 
 /* Typedefs of the structures below */
+typedef struct _tmx_list_item tmx_list_item;
 typedef struct _tmx_prop tmx_property;
 typedef struct _tmx_img tmx_image;
 typedef struct _tmx_frame tmx_anim_frame;
@@ -88,7 +89,14 @@ typedef union {
 	char *string, *file; /* default and type = string or file */
 	uint32_t color; /* type = color, bytes : ARGB */
 	tmx_properties *properties; /* type = custom */
+	tmx_list_item *list; /* type = list */
 } tmx_property_value;
+
+struct _tmx_list_item { /* <item> in a list property */
+	enum tmx_property_type type;
+	tmx_property_value value;
+	tmx_list_item *next;
+};
 
 struct _tmx_prop { /* <properties> and <property> */
 	char *name;
