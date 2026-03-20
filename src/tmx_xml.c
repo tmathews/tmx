@@ -40,6 +40,55 @@ static int check_reader(xmlTextReaderPtr reader) {
 	return 1;
 }
 
+static int parse_list_item(xmlTextReaderPtr reader, tmx_list_item *item) {
+	char *value;
+
+	if ((value = (char*)xmlTextReaderGetAttribute(reader, (xmlChar*)"type"))) { /* type */
+		item->type = parse_property_type(value);
+		tmx_free_func(value);
+	} else {
+		item->type = PT_STRING;
+	}
+
+	if ((value = (char*)xmlTextReaderGetAttribute(reader, (xmlChar*)"value"))) { /* value */
+		switch (item->type) {
+			case PT_OBJECT:
+			case PT_INT:
+				item->value.integer = atoi(value);
+				tmx_free_func(value);
+				break;
+			case PT_FLOAT:
+				item->value.decimal = (float)atof(value);
+				tmx_free_func(value);
+				break;
+			case PT_BOOL:
+				item->value.integer = parse_boolean(value);
+				tmx_free_func(value);
+				break;
+			case PT_COLOR:
+				item->value.integer = get_color_rgb(value);
+				tmx_free_func(value);
+				break;
+			case PT_NONE:
+			case PT_STRING:
+			case PT_FILE:
+			default:
+				item->value.string = value;
+				break;
+		}
+	} else if (item->type == PT_NONE || item->type == PT_STRING) {
+		if (!(value = (char*)xmlTextReaderReadString(reader))) {
+			tmx_err(E_MISSEL, "xml parser: missing 'value' attribute or inner XML for the 'item' element");
+		}
+		item->value.string = value;
+	} else {
+		tmx_err(E_MISSEL, "xml parser: missing 'value' attribute in the 'item' element");
+		return 0;
+	}
+
+	return 1;
+}
+
 static int parse_property(xmlTextReaderPtr reader, tmx_property *prop) {
 	char *value;
 	int curr_depth;
@@ -94,14 +143,15 @@ static int parse_property(xmlTextReaderPtr reader, tmx_property *prop) {
 			tmx_err(E_MISSEL, "xml parser: missing 'value' attribute or inner XML for the 'property' element");
 		}
 		prop->value.string = value;
-	} else if (prop->type != PT_CUSTOM) {
+	} else if (prop->type != PT_CUSTOM && prop->type != PT_LIST) {
 		tmx_err(E_MISSEL, "xml parser: missing 'value' attribute in the 'property' element");
 		return 0;
 	}
 
-	/* If it has a child, then it's a class-typed property */
+	/* If it has children, parse them according to property type */
 	curr_depth = xmlTextReaderDepth(reader);
 	if (!xmlTextReaderIsEmptyElement(reader)) {
+		tmx_list_item **list_tail = (prop->type == PT_LIST) ? &(prop->value.list) : NULL;
 		do {
 			if (xmlTextReaderRead(reader) != 1) return 0; /* error_handler has been called */
 
@@ -109,6 +159,12 @@ static int parse_property(xmlTextReaderPtr reader, tmx_property *prop) {
 				name = (char*)xmlTextReaderConstName(reader);
 				if (!strcmp(name, "properties")) {
 					if (!parse_properties(reader, &(prop->value.properties))) return 0;
+				} else if (!strcmp(name, "item") && prop->type == PT_LIST) {
+					tmx_list_item *item;
+					if (!(item = alloc_list_item())) return 0;
+					if (!parse_list_item(reader, item)) return 0;
+					*list_tail = item;
+					list_tail = &(item->next);
 				} else if (xmlTextReaderNext(reader) != 1) {
 					return 0;
 				}

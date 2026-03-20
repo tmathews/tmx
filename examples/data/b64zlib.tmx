@@ -15,6 +15,12 @@ baz</property>
    </properties>
   </property>
   <property name="my_enum" type="int" propertytype="MyEnum" value="5"/>
+  <property name="my_list" type="list">
+   <item type="bool" value="true"/>
+   <item type="int" value="1337"/>
+   <item type="string" value="hello"/>
+   <item type="float" value="2.718"/>
+  </property>
   <property name="obj" type="object" value="3"/>
   <property name="pi" type="float" value="3.14"/>
   <property name="xml" value="libxml2"/>

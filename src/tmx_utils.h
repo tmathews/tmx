@@ -56,6 +56,7 @@ void set_alloc_functions();
 void setup_libxml_mem();
 
 tmx_property*        alloc_prop(void);
+tmx_list_item*       alloc_list_item(void);
 tmx_image*           alloc_image(void);
 tmx_shape*           alloc_shape(void);
 tmx_text*            alloc_text(void);

@@ -551,6 +551,9 @@ enum tmx_property_type parse_property_type(const char *propertytype) {
 	if (!strcmp(propertytype, "class")) {
 		return PT_CUSTOM;
 	}
+	if (!strcmp(propertytype, "list")) {
+		return PT_LIST;
+	}
 	return PT_NONE;
 }
 
