@@ -143,6 +143,8 @@ void free_property(tmx_property *p) {
 				tmx_list_item *next = item->next;
 				if (item->type == PT_STRING || item->type == PT_FILE || item->type == PT_NONE) {
 					tmx_free_func(item->value.string);
+				} else if (item->type == PT_CUSTOM) {
+					free_props(item->value.properties);
 				}
 				tmx_free_func(item);
 				item = next;
