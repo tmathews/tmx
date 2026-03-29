@@ -42,6 +42,8 @@ static int check_reader(xmlTextReaderPtr reader) {
 
 static int parse_list_item(xmlTextReaderPtr reader, tmx_list_item *item) {
 	char *value;
+	int curr_depth;
+	const char *name;
 
 	if ((value = (char*)xmlTextReaderGetAttribute(reader, (xmlChar*)"type"))) { /* type */
 		item->type = parse_property_type(value);
@@ -81,9 +83,29 @@ static int parse_list_item(xmlTextReaderPtr reader, tmx_list_item *item) {
 			tmx_err(E_MISSEL, "xml parser: missing 'value' attribute or inner XML for the 'item' element");
 		}
 		item->value.string = value;
-	} else {
+	} else if (item->type != PT_CUSTOM) {
 		tmx_err(E_MISSEL, "xml parser: missing 'value' attribute in the 'item' element");
 		return 0;
+	}
+
+	/* If the item is a class type, parse its child <properties> element */
+	if (item->type == PT_CUSTOM) {
+		curr_depth = xmlTextReaderDepth(reader);
+		if (!xmlTextReaderIsEmptyElement(reader)) {
+			do {
+				if (xmlTextReaderRead(reader) != 1) return 0;
+
+				if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
+					name = (const char*)xmlTextReaderConstName(reader);
+					if (!strcmp(name, "properties")) {
+						if (!parse_properties(reader, &(item->value.properties))) return 0;
+					} else if (xmlTextReaderNext(reader) != 1) {
+						return 0;
+					}
+				}
+			} while (xmlTextReaderNodeType(reader) != XML_READER_TYPE_END_ELEMENT ||
+				xmlTextReaderDepth(reader) > curr_depth);
+		}
 	}
 
 	return 1;
